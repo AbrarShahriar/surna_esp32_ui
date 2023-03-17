@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>8x8 Matrix Character Creator</title>
+
+    <link rel="stylesheet" href="index.css" />
+
+    <script src="http://cdnjs.cloudflare.com/ajax/libs/es6-shim/0.22.2/es6-shim.js"></script>
+  </head>
+  <body>
+    <h2>8x8 Matrix Character Creator</h2>
+    <main>
+      <div id="container"></div>
+
+      <button id="submit">Submit</button>
+    </main>
+    <textarea id="output"></textarea>
+
+    <script>
+      var memory = new Array(64);
+      var buttons = [];
+      var dims = [8, 8];
+      var button = document.createElement("button");
+      var container = document.getElementById("container");
+      var output = document.getElementById("output");
+      var submitBtn = document.getElementById("submit");
+
+      button.classList.add("led");
+
+      for (var i = 0; i < dims[0]; i++) {
+        for (var j = 0; j < dims[0]; j++) {
+          buttons.push(container.appendChild(button.cloneNode()));
+        }
+      }
+
+      function asBinaryArray() {
+        var result = [];
+        var all = buttons.map(function (button) {
+          return +button.classList.contains("active");
+        });
+
+        for (var i = 0; i < 8; i++) {
+          result.push(all.slice(i * 8, i * 8 + 8).join(""));
+        }
+
+        return result;
+      }
+
+      function binToDec(bin) {
+        return parseInt(bin, 2);
+      }
+
+      function bin2hex(bin) {
+        return parseInt(bin, 2).toString(16);
+      }
+
+      function showOutput() {
+        output.value = asBinaryArray()
+          .map(function (v) {
+            return binToDec(v);
+          })
+          .join(",");
+      }
+
+      container.addEventListener(
+        "click",
+        function (event) {
+          if (event.target.nodeName === "DIV") {
+            return;
+          }
+          event.target.classList.toggle("active");
+          showOutput();
+        },
+        false
+      );
+
+      var dragging = false;
+      container.addEventListener("mouseover", function (event) {
+        if (event.target.nodeName === "DIV" || event.shiftKey == false) {
+          return;
+        }
+        if (dragging) {
+          event.target.classList.add("active");
+        }
+      });
+
+      container.addEventListener("mousedown", function (event) {
+        if (event.target.nodeName === "DIV" || event.shiftKey == false) {
+          return;
+        }
+        dragging = true;
+        event.target.classList.add("active");
+      });
+
+      container.addEventListener("mouseup", function (event) {
+        if (dragging) {
+          dragging = false;
+          showOutput();
+        }
+      });
+
+      submitBtn.onclick = function () {
+        var data = output.value.split(",").map((el) => parseInt(el));
+        submitBtn.innerText = "Loading...";
+        submitBtn.disabled = true;
+        fetch("https://fair-plum-lemur-boot.cyclic.app", {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+          },
+          body: JSON.stringify({
+            matrixState: data,
+          }),
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            submitBtn.innerText = "Submit";
+            submitBtn.disabled = false;
+            alert("Successfully Submitted :)");
+          })
+          .catch((err) => alert("Something Went Wrong :("));
+      };
+    </script>
+  </body>
+</html>
